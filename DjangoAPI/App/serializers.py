@@ -7,7 +7,7 @@ from .models import Orders, Customers, Contacts
 class UsersSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["username", "email", "password"]
+        fields = ['username', 'email', 'password']
         extra_kwargs = {
             'uid' : {
                 'required' : False,
@@ -29,13 +29,13 @@ class UsersSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         # Isolate data
-        username = validated_data.pop("username")
-        email = validated_data.pop("email")
-        password = validated_data.pop("password")
+        username = validated_data.pop('username')
+        email = validated_data.pop('email')
+        password = validated_data.pop('password')
 
         # Check for duplicates
         if User.objects.filter(username=username).exists() or User.objects.filter(email=email).exists():
-            raise PermissionDenied("User already exists!")
+            raise PermissionDenied('User already exists!')
         else:
             # Hash the password & create user
             password = make_password(password)
@@ -47,7 +47,7 @@ class UsersSerializer(serializers.ModelSerializer):
 class ContactsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contacts
-        fields = "__all__"
+        fields = '__all__'
         extra_kwargs = {
             'uid' : {
                 'required' : False,
@@ -67,13 +67,13 @@ class ContactsSerializer(serializers.ModelSerializer):
             }
         }
 
-# This serializer enables the creation of a new contact whilst adding a customer
+# This serializer can create both new customer and contact at the same time
 class CustomersSerializer(serializers.ModelSerializer):
     contact = ContactsSerializer()
 
     class Meta:
         model = Customers
-        fields = "__all__"
+        fields = '__all__'
         extra_kwargs = {
             'uid': {
                 'required' : False,
@@ -97,7 +97,7 @@ class CustomersSerializer(serializers.ModelSerializer):
         }
 
     def create(self, validated_data):
-        contactData = validated_data.pop("contact")
+        contactData = validated_data.pop('contact')
 
         contact = Contacts.objects.create(**contactData)
         customer = Customers.objects.create(contact = contact, **validated_data)
@@ -110,7 +110,7 @@ class OrdersSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Orders
-        fields = ["uid", "slug", "project", "description", "price", "customer"]
+        fields = ['uid', 'slug', 'project', 'description', 'price', 'customer']
         extra_kwargs = {
             'uid': {
                 'required' : False,

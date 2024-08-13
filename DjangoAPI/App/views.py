@@ -3,8 +3,9 @@ from django.contrib.auth.models import User
 from rest_framework import viewsets, status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.authtoken.models import Token
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from .models import Orders, Customers, Contacts
 from .serializers import UsersSerializer, OrdersSerializer, CustomersSerializer, ContactsSerializer
@@ -13,6 +14,7 @@ from .serializers import UsersSerializer, OrdersSerializer, CustomersSerializer,
 class UsersControlView(APIView):
     serializer_class = UsersSerializer
     http_method_names = ['post']
+    permission_classes = [AllowAny]
 
     # User registering. UsersSerializer takes care of duplicate prevention and password hashing
     def post(self, request):
@@ -34,6 +36,7 @@ class UsersControlView(APIView):
 class UsersAuthView(APIView):
     serializer_class = UsersSerializer
     http_method_names = ['post']
+    permission_classes = [AllowAny]
 
     # Login can executed with either username or email
     def post(self, request):
@@ -48,19 +51,14 @@ class UsersAuthView(APIView):
     
 class UsersLogOutView(APIView):
     http_method_names = ['delete']
+    permission_classes = [IsAuthenticated]
 
     def delete(self, request):
-        tokenValue = request.data['token']
-
-        if not tokenValue:
-            return Response({"detail": "Token not provided."}, status=status.HTTP_400_BAD_REQUEST)
-
         try:
-            token = Token.objects.get(key = tokenValue)
-            token.delete()
+            request.user.auth_token.delete()
             return Response({"detail": "Token deleted successfully."}, status=status.HTTP_200_OK)
-        except Token.DoesNotExist:
-            return Response({"detail": "Token does not exist."}, status=status.HTTP_400_BAD_REQUEST)
+        except:
+            return Response({"detail": "Invalid token."}, status=status.HTTP_401_UNAUTHORIZED)
 
 """
     Keep in mind:
@@ -71,6 +69,8 @@ class UsersLogOutView(APIView):
 
 # --- Orders --- #
 class ListCreateOrdersView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+
     queryset = Orders.objects.all()
     serializer_class = OrdersSerializer
 
@@ -94,12 +94,16 @@ class ListCreateOrdersView(generics.ListCreateAPIView):
 
 # Retrieve using a term
 class RetrieveUpdateDestroyOrdersViewSlug(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated]
+
     queryset = Orders.objects.all()
     serializer_class = OrdersSerializer
     lookup_field = 'slug'
 
 # Retrieve using a primary key
 class RetrieveUpdateDestroyOrdersViewUID(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated]
+
     queryset = Orders.objects.all()
     serializer_class = OrdersSerializer
 
@@ -107,6 +111,7 @@ class RetrieveUpdateDestroyOrdersViewUID(generics.RetrieveUpdateDestroyAPIView):
 # --- Customers --- #
 # Get all customers
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def customersList(request):
     queryset = Customers.objects.all()
     serializer = CustomersSerializer(queryset, many=True)
@@ -114,6 +119,7 @@ def customersList(request):
 
 # Create a new customer
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def customersCreate(request):
     serializer = CustomersSerializer(data = request.data)
 
@@ -132,6 +138,7 @@ def customersCreate(request):
 
 # Get singular, update or delete an existing customer
 @api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
 def customersDetails(request, pk):
     try:
         queryset = Customers.objects.get(pk = pk)
@@ -157,6 +164,8 @@ def customersDetails(request, pk):
 
 # --- Contacts --- #
 class ContactsViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+
     serializer_class = ContactsSerializer
     queryset = Contacts.objects.all()
     
